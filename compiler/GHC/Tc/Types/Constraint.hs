@@ -1185,6 +1185,21 @@ insolubleWantedCt ct = insolubleCt ct &&
                        not (arisesFromGivens ct) &&
                        not (isWantedWantedFunDepOrigin (ctOrigin ct))
 
+{-
+insolubleIrredCt (IrredCt { ir_ev = ev, ir_reason = reason })
+  =  isInsolubleReason reason
+  || isTopLevelUserTypeError (ctEvPred ev)
+
+-- | Is this an user error message type, i.e. either the form @TypeError err@ or
+-- @Unsatisfiable err@?
+isTopLevelUserTypeError :: PredType -> Bool
+isTopLevelUserTypeError pred =
+  isJust (userTypeError_maybe pred) || isJust (isUnsatisfiableCt_maybe pred)
+
+
+
+-}
+
 insolubleEqCt :: Ct -> Bool
 -- Returns True of /equality/ constraints
 -- that are /definitely/ insoluble
