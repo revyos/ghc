@@ -922,7 +922,6 @@ extern char **environ;
       SymI_HasProto(stopHeapProfTimer)                                  \
       SymI_HasProto(requestHeapCensus)                                  \
       SymI_HasProto(atomic_inc)                                         \
-      SymI_HasProto(atomic_inc64)                                       \
       SymI_HasProto(atomic_dec)                                         \
       SymI_HasProto(hs_spt_lookup)                                      \
       SymI_HasProto(hs_spt_insert)                                      \
