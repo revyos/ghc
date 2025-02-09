@@ -96,6 +96,7 @@ regUsageOfInstr platform instr = case instr of
   ORI dst src1 _ -> usage (regOp src1, regOp dst)
   XORI dst src1 _ -> usage (regOp src1, regOp dst)
   J_TBL _ _ t -> usage ([t], [])
+  J t -> usage (regTarget t, [])
   B t -> usage (regTarget t, [])
   BCOND _ l r t -> usage (regTarget t ++ regOp l ++ regOp r, [])
   BL t ps -> usage (t : ps, callerSavedRegisters)
@@ -177,6 +178,7 @@ patchRegsOfInstr instr env = case instr of
   ORI o1 o2 o3 -> ORI (patchOp o1) (patchOp o2) (patchOp o3)
   XORI o1 o2 o3 -> XORI (patchOp o1) (patchOp o2) (patchOp o3)
   J_TBL ids mbLbl t -> J_TBL ids mbLbl (env t)
+  J t -> J (patchTarget t)
   B t -> B (patchTarget t)
   BL t ps -> BL (patchReg t) ps
   BCOND c o1 o2 t -> BCOND c (patchOp o1) (patchOp o2) (patchTarget t)
@@ -213,6 +215,7 @@ isJumpishInstr :: Instr -> Bool
 isJumpishInstr instr = case instr of
   ANN _ i -> isJumpishInstr i
   J_TBL {} -> True
+  J {} -> True
   B {} -> True
   BL {} -> True
   BCOND {} -> True
@@ -221,6 +224,7 @@ isJumpishInstr instr = case instr of
 canFallthroughTo :: Instr -> BlockId -> Bool
 canFallthroughTo insn bid =
   case insn of
+    J (TBlock target) -> bid == target
     B (TBlock target) -> bid == target
     BCOND _ _ _ (TBlock target) -> bid == target
     J_TBL targets _ _ -> all isTargetBid targets
@@ -234,6 +238,7 @@ canFallthroughTo insn bid =
 jumpDestsOfInstr :: Instr -> [BlockId]
 jumpDestsOfInstr (ANN _ i) = jumpDestsOfInstr i
 jumpDestsOfInstr (J_TBL ids _mbLbl _r) = catMaybes ids
+jumpDestsOfInstr (J t) = [id | TBlock id <- [t]]
 jumpDestsOfInstr (B t) = [id | TBlock id <- [t]]
 jumpDestsOfInstr (BCOND _ _ _ t) = [id | TBlock id <- [t]]
 jumpDestsOfInstr _ = []
@@ -247,6 +252,7 @@ patchJumpInstr instr patchF =
   case instr of
     ANN d i -> ANN d (patchJumpInstr i patchF)
     J_TBL ids mbLbl r -> J_TBL (map (fmap patchF) ids) mbLbl r
+    J (TBlock bid) -> J (TBlock (patchF bid))
     B (TBlock bid) -> B (TBlock (patchF bid))
     BCOND c o1 o2 (TBlock bid) -> BCOND c o1 o2 (TBlock (patchF bid))
     _ -> panic $ "patchJumpInstr: " ++ instrCon instr
@@ -455,7 +461,7 @@ allocMoreStack platform slots proc@(CmmProc info lbl live (ListGraph code)) = do
           block' = foldr insert_dealloc [] insns
 
       insert_dealloc insn r = case insn of
-        J_TBL {} -> dealloc ++ (insn : r)
+        J {} -> dealloc ++ (insn : r)
         ANN _ e -> insert_dealloc e r
         _other
           | jumpDestsOfInstr insn /= [] ->
@@ -571,6 +577,8 @@ data Instr
     --
     -- @if(o2 cond o3) op <- 1 else op <- 0@
     CSET Operand Operand Operand Cond
+    -- | Like B, but only used for non-local jumps. Used to distinguish genJumps from others.
+  | J Target
   | -- | A jump instruction with data for switch/jump tables
     J_TBL [Maybe BlockId] (Maybe CLabel) Reg
   | -- | Unconditional jump (no linking)
@@ -629,6 +637,7 @@ instrCon i =
     LDRU {} -> "LDRU"
     CSET {} -> "CSET"
     J_TBL {} -> "J_TBL"
+    J {} -> "J"
     B {} -> "B"
     BL {} -> "BL"
     BCOND {} -> "BCOND"

@@ -1457,7 +1457,7 @@ assignReg_FltCode = assignReg_IntCode
 genJump :: CmmExpr {-the branch target-} -> NatM InstrBlock
 genJump expr = do
   (target, _format, code) <- getSomeReg expr
-  return (code `appOL` unitOL (annExpr expr (B (TReg target))))
+  return (code `appOL` unitOL (annExpr expr (J (TReg target))))
 
 -- -----------------------------------------------------------------------------
 --  Unconditional branches
@@ -2148,45 +2148,46 @@ makeFarBranches {- only used when debugging -} _platform statics basic_blocks = 
 
   instr_size :: Instr -> Int
   instr_size i = case i of
-    COMMENT{} -> 0
-    MULTILINE_COMMENT{} -> 0
+    COMMENT {} -> 0
+    MULTILINE_COMMENT {} -> 0
     ANN _ instr -> instr_size instr
-    LOCATION{} -> 0
-    DELTA{} -> 0
+    LOCATION {} -> 0
+    DELTA {} -> 0
     -- At this point there should be no NEWBLOCK in the instruction stream (pos, mapInsert bid pos m)
-    NEWBLOCK{} -> panic "mkFarBranched - Unexpected"
-    LDATA{} -> panic "mkFarBranched - Unexpected"
+    NEWBLOCK {} -> panic "mkFarBranched - Unexpected"
+    LDATA {} -> panic "mkFarBranched - Unexpected"
     PUSH_STACK_FRAME -> 4
     POP_STACK_FRAME -> 4
-    ADD{} -> 1
-    MUL{} -> 1
-    MULH{} -> 1
-    NEG{} -> 1
-    DIV{} -> 1
-    REM{} -> 1
-    REMU{} -> 1
-    SUB{} -> 1
-    DIVU{} -> 1
-    AND{} -> 1
-    OR{} -> 1
-    SRA{} -> 1
-    XOR{} -> 1
-    SLL{} -> 1
-    SRL{} -> 1
-    MOV{} -> 2
-    ORI{} -> 1
-    XORI{} -> 1
-    CSET{} -> 2
-    STR{} -> 1
-    LDR{} -> 3
-    LDRU{} -> 1
-    FENCE{} -> 1
-    FCVT{} -> 1
-    FABS{} -> 1
+    ADD {} -> 1
+    MUL {} -> 1
+    MULH {} -> 1
+    NEG {} -> 1
+    DIV {} -> 1
+    REM {} -> 1
+    REMU {} -> 1
+    SUB {} -> 1
+    DIVU {} -> 1
+    AND {} -> 1
+    OR {} -> 1
+    SRA {} -> 1
+    XOR {} -> 1
+    SLL {} -> 1
+    SRL {} -> 1
+    MOV {} -> 2
+    ORI {} -> 1
+    XORI {} -> 1
+    CSET {} -> 2
+    STR {} -> 1
+    LDR {} -> 3
+    LDRU {} -> 1
+    FENCE {} -> 1
+    FCVT {} -> 1
+    FABS {} -> 1
     -- estimate the subsituted size for jumps to lables
     -- jumps to registers have size 1
-    BCOND{} -> long_bc_jump_size
+    BCOND {} -> long_bc_jump_size
     B (TBlock _) -> long_b_jump_size
     B (TReg _) -> 1
+    J op -> instr_size (B op)
     BL _ _ -> 1
-    J_TBL{} -> 1
+    J_TBL {} -> 1
