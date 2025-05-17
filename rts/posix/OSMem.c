@@ -493,8 +493,30 @@ osTryReserveHeapMemory (W_ len, void *hint)
     return start;
 }
 
+static int check_allocation_reasonable(W_ start, size_t size, size_t pageSize)
+{
+    /*
+     * Allocate only one page with MAP_FIXED_NOREPLACE. Failures with errnos
+     * different from EEXIST suggests the allocation isn't reasonable on the
+     * system.
+     */
+    void *addr = (void *)(start + size);
+    void *ptr = mmap(addr, pageSize, PROT_READ,
+                     MAP_PRIVATE | MAP_FIXED_NOREPLACE | MAP_ANONYMOUS, -1, 0);
+    if (ptr == MAP_FAILED && errno != EEXIST) {
+        return 0;
+    }
+
+    if (munmap(ptr, pageSize) < 0) {
+        sysErrorBelch("unable to release mapped page");
+    }
+
+    return 1;
+}
+
 void *osReserveHeapMemory(void *startAddressPtr, W_ *len)
 {
+    size_t pageSize = getPageSize();
     int attempt;
     void *at;
 
@@ -565,7 +587,6 @@ void *osReserveHeapMemory(void *startAddressPtr, W_ *len)
             stg_exit(EXIT_FAILURE);
         }
 
-        size_t pageSize = getPageSize();
         // 2/3rds of limit, round down to multiple of PAGE_SIZE
         *len = (W_) (asLimit.rlim_cur * 0.666) & ~(pageSize - 1);
 
@@ -615,11 +636,20 @@ void *osReserveHeapMemory(void *startAddressPtr, W_ *len)
             break;
         } else {
             // We got addressing space but it wasn't above the 8GB mark.
-            // Try again.
             if (munmap(at, *len) < 0) {
                 sysErrorBelch("unable to release reserved heap");
             }
+
+            // If we're performing an allocation with unreasonble size, shrink
+            // the size instead of moving the base address up.
+            if (!check_allocation_reasonable((W_)hint, *len, pageSize)) {
+                *len -= *len / 8;
+                continue;
+            }
+
+            // Otherwise, try again with hint adjusted.
         }
+
         attempt++;
     }
 
