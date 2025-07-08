@@ -272,6 +272,22 @@ platformCConvNeedsExtension platform = case platformArch platform of
     | OSDarwin <- platformOS platform -> True
   _            -> False
 
+-- | Does this platform have an RTS linker?
+platformHasRTSLinker :: Platform -> Bool
+-- Note that we've inlined this logic in hadrian's
+-- Settings.Builders.RunTest.inTreeCompilerArgs.
+-- If you change this, be sure to change it too
+platformHasRTSLinker p = case archOS_arch (platformArchOS p) of
+  ArchPPC           -> False -- powerpc
+  ArchPPC_64 ELF_V1 -> False -- powerpc64
+  ArchPPC_64 ELF_V2 -> False -- powerpc64le
+  ArchS390X         -> False
+  ArchLoongArch64   -> False
+  ArchJavaScript    -> False
+  ArchWasm32        -> False
+  _                 -> True
+
+
 
 --------------------------------------------------
 -- Instruction sets
