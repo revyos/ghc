@@ -5,7 +5,7 @@ import GHC.Platform
 import GHC.Unit.Module
 import GHC.Utils.Outputable
 import GHC.Types.SrcLoc (pprUserRealSpan, srcSpanFile)
-import GHC.Data.FastString (unpackFS)
+import GHC.Data.FastString (unpackFS, LexicalFastString (..))
 
 import GHC.Cmm.CLabel
 import GHC.Cmm.Expr
@@ -67,10 +67,10 @@ toCgIPE platform ctx module_name ipe = do
     table_name <- lookupStringTable $ ST.pack $ renderWithContext ctx (pprCLabel platform (infoTablePtr ipe))
     closure_desc <- lookupStringTable $ ST.pack $ show (infoProvEntClosureType ipe)
     type_desc <- lookupStringTable $ ST.pack $ infoTableType ipe
-    let label_str = maybe "" snd (infoTableProv ipe)
+    let label_str = maybe "" ((\(LexicalFastString s) -> unpackFS s) . snd) (infoTableProv ipe)
     let (src_loc_file, src_loc_span) =
             case infoTableProv ipe of
-              Nothing -> ("", "")
+              Nothing -> (mempty, "")
               Just (span, _) ->
                   let file = unpackFS $ srcSpanFile span
                       coords = renderWithContext ctx (pprUserRealSpan False span)

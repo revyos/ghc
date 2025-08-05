@@ -28,6 +28,7 @@ import qualified Data.Map as Map
 import System.FilePath
 
 import qualified GHC.Cmm.Dataflow.Label as H
+import GHC.Data.FastString
 
 -- | Generate DWARF/debug information
 dwarfGen :: IsDoc doc => String -> NCGConfig -> ModLocation -> UniqSupply -> [DebugBlock]
@@ -176,7 +177,8 @@ procToDwarf :: NCGConfig -> DebugBlock -> DwarfInfo
 procToDwarf config prc
   = DwarfSubprogram { dwChildren = map (blockToDwarf config) (dblBlocks prc)
                     , dwName     = case dblSourceTick prc of
-                         Just s@SourceNote{} -> sourceName s
+                         Just s@SourceNote{} -> case sourceName s of
+                            LexicalFastString s -> unpackFS s
                          _otherwise -> show (dblLabel prc)
                     , dwLabel    = dblCLabel prc
                     , dwParent   = fmap mkAsmTempDieLabel

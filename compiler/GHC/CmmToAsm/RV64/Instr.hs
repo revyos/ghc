@@ -106,8 +106,6 @@ regUsageOfInstr platform instr = case instr of
   FENCE _ _ -> usage ([], [])
   FCVT _variant dst src -> usage (regOp src, regOp dst)
   FABS dst src -> usage (regOp src, regOp dst)
-  FMA _ dst src1 src2 src3 ->
-    usage (regOp src1 ++ regOp src2 ++ regOp src3, regOp dst)
   _ -> panic $ "regUsageOfInstr: " ++ instrCon instr
   where
     -- filtering the usage is necessary, otherwise the register
@@ -189,8 +187,6 @@ patchRegsOfInstr instr env = case instr of
   FENCE o1 o2 -> FENCE o1 o2
   FCVT variant o1 o2 -> FCVT variant (patchOp o1) (patchOp o2)
   FABS o1 o2 -> FABS (patchOp o1) (patchOp o2)
-  FMA s o1 o2 o3 o4 ->
-    FMA s (patchOp o1) (patchOp o2) (patchOp o3) (patchOp o4)
   _ -> panic $ "patchRegsOfInstr: " ++ instrCon instr
   where
     patchOp :: Operand -> Operand
@@ -591,13 +587,6 @@ data Instr
     FCVT FcvtVariant Operand Operand
   | -- | Floating point ABSolute value
     FABS Operand Operand
-  | -- | Floating-point fused multiply-add instructions
-    --
-    -- - fmadd : d =   r1 * r2 + r3
-    -- - fnmsub: d =   r1 * r2 - r3
-    -- - fmsub : d = - r1 * r2 + r3
-    -- - fnmadd: d = - r1 * r2 - r3
-    FMA FMASign Operand Operand Operand Operand
 
 -- | Operand of a FENCE instruction (@r@, @w@ or @rw@)
 data FenceType = FenceRead | FenceWrite | FenceReadWrite
@@ -646,12 +635,6 @@ instrCon i =
     FENCE {} -> "FENCE"
     FCVT {} -> "FCVT"
     FABS {} -> "FABS"
-    FMA variant _ _ _ _ ->
-      case variant of
-        FMAdd -> "FMADD"
-        FMSub -> "FMSUB"
-        FNMAdd -> "FNMADD"
-        FNMSub -> "FNMSUB"
 
 data Target
   = TBlock BlockId

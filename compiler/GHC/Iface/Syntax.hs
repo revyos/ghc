@@ -85,6 +85,7 @@ import Language.Haskell.Syntax.Basic (FieldLabelString(..))
 import Control.Monad
 import System.IO.Unsafe
 import Control.DeepSeq
+import GHC.Data.FastString (FastString)
 
 infixl 3 &&&
 
@@ -574,7 +575,7 @@ data IfaceExpr
 data IfaceTickish
   = IfaceHpcTick Module Int                -- from HpcTick x
   | IfaceSCC     CostCentre Bool Bool      -- from ProfNote
-  | IfaceSource  RealSrcSpan String        -- from SourceNote
+  | IfaceSource  RealSrcSpan FastString        -- from SourceNote
   -- no breakpoints: we never export these into interface files
 
 data IfaceAlt = IfaceAlt IfaceConAlt [IfLclName] IfaceExpr

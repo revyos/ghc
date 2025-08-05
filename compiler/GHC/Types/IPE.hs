@@ -17,10 +17,11 @@ import GHC.Core.Type
 import Data.List.NonEmpty
 import GHC.Cmm.CLabel (CLabel)
 import qualified Data.Map.Strict as Map
+import GHC.Data.FastString (LexicalFastString)
 
 -- | Position and information about an info table.
 -- For return frames these are the contents of a 'CoreSyn.SourceNote'.
-type IpeSourceLocation = (RealSrcSpan, String)
+type IpeSourceLocation = (RealSrcSpan, LexicalFastString)
 
 -- | A map from a 'Name' to the best approximate source position that
 -- name arose from.

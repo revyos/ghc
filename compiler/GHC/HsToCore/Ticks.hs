@@ -1197,7 +1197,7 @@ mkTickish boxLabel countEntries topOnly pos fvs decl_path = do
     Breakpoints -> Breakpoint noExtField <$> addMixEntry me <*> pure ids
 
     SourceNotes | RealSrcSpan pos' _ <- pos ->
-      return $ SourceNote pos' cc_name
+      return $ SourceNote pos' $ LexicalFastString $ mkFastString cc_name
 
     _otherwise -> panic "mkTickish: bad source span!"
 

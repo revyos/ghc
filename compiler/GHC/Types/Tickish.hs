@@ -40,6 +40,7 @@ import Language.Haskell.Syntax.Extension ( NoExtField )
 
 import Data.Data
 import GHC.Utils.Outputable (Outputable (ppr), text)
+import GHC.Data.FastString (LexicalFastString)
 
 {- *********************************************************************
 *                                                                      *
@@ -153,7 +154,7 @@ data GenTickish pass =
   -- necessary to enable optimizations.
   | SourceNote
     { sourceSpan :: RealSrcSpan -- ^ Source covered
-    , sourceName :: String      -- ^ Name for source location
+    , sourceName :: LexicalFastString      -- ^ Name for source location
                                 --   (uses same names as CCs)
     }
 

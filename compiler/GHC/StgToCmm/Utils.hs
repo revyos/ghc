@@ -659,7 +659,7 @@ convertInfoProvMap cfg this_mod (InfoTableProvMap (UniqMap dcenv) denv infoTable
 
         lookupClosureMap :: Maybe (IPEStats, InfoProvEnt)
         lookupClosureMap = case hasHaskellName cl >>= lookupUniqMap denv of
-                                Just (ty, mbspan) -> Just (closureIpeStats cn, (InfoProvEnt cl cn (tyString ty) this_mod mbspan))
+                                Just (ty, mbspan) -> Just (closureIpeStats cn, InfoProvEnt cl cn (tyString ty) this_mod mbspan)
                                 Nothing -> Nothing
 
         lookupDataConMap :: Maybe (IPEStats, InfoProvEnt)
@@ -668,12 +668,12 @@ convertInfoProvMap cfg this_mod (InfoTableProvMap (UniqMap dcenv) denv infoTable
             -- This is a bit grimy, relies on the DataCon and Name having the same Unique, which they do
             (dc, ns) <- hasHaskellName cl >>= lookupUFM_Directly dcenv . getUnique
             -- Lookup is linear but lists will be small (< 100)
-            return $ (InfoProvEnt cl cn (tyString (dataConTyCon dc)) this_mod (join $ lookup n (NE.toList ns)))
+            return $ InfoProvEnt cl cn (tyString (dataConTyCon dc)) this_mod (join $ lookup n (NE.toList ns))
 
         lookupInfoTableToSourceLocation :: Maybe (IPEStats, InfoProvEnt)
         lookupInfoTableToSourceLocation = do
             sourceNote <- Map.lookup (cit_lbl cmit) infoTableToSourceLocationMap
-            return $ (closureIpeStats cn, (InfoProvEnt cl cn "" this_mod sourceNote))
+            return (closureIpeStats cn, InfoProvEnt cl cn "" this_mod sourceNote)
 
         -- This catches things like prim closure types and anything else which doesn't have a
         -- source location
